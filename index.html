@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bribe AI — The Cost of Corruption</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #e63b3b;
+    --red-dim: #7a1a1a;
+    --red-glow: rgba(230, 59, 59, 0.6);
+    --bg: #050507;
+    --surface: #0d0d10;
+    --text: #f0eee8;
+    --muted: #4a4a55;
+    --gold: #c9a84c;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    cursor: none;
+  }
+
+  /* ── CUSTOM CURSOR ── */
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--red);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s;
+    mix-blend-mode: difference;
+  }
+
+  /* ── CALCULATOR SCREEN ── */
+  #calc-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 10;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  #calc-screen.exit {
+    opacity: 0;
+    transform: scale(0.96);
+    pointer-events: none;
+  }
+
+  .calc-wrapper {
+    width: 100%;
+    max-width: 520px;
+    padding: 0 24px;
+  }
+
+  .calc-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .calc-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--red-glow); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+  }
+
+  .calc-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 7vw, 56px);
+    letter-spacing: 0.03em;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .calc-title span { color: var(--red); }
+
+  .calc-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 36px;
+    font-weight: 300;
+  }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid #1a1a20;
+    border-radius: 14px;
+    padding: 28px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field.full { grid-column: 1 / -1; }
+
+  .field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .field select, .field input[type=range] {
+    background: #111116;
+    border: 1px solid #1e1e26;
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+    cursor: none;
+  }
+  .field select:focus { border-color: var(--red); }
+  .field select option { background: #111116; }
+
+  /* Range slider */
+  .range-wrap { position: relative; }
+  .field input[type=range] {
+    padding: 0;
+    width: 100%;
+    height: 36px;
+    background: transparent;
+    border: none;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #1e1e26;
+    border-radius: 2px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-top: -6px;
+    cursor: none;
+    box-shadow: 0 0 8px var(--red-glow);
+  }
+  .range-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--red);
+    text-align: right;
+    margin-top: -4px;
+  }
+
+  .cta-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--red);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.1em;
+    cursor: none;
+    margin-top: 6px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .cta-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--red-glow);
+  }
+  .cta-btn:active { transform: translateY(0); }
+
+  /* ── COUNTER SCREEN ── */
+  #counter-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--bg);
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease 0.3s;
+    padding: 24px;
+  }
+  #counter-screen.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* BACKGROUND GRID */
+  #counter-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(230,59,59,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(230,59,59,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+  }
+
+  /* RADIAL GLOW */
+  .bg-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(230,59,59,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: background 0.5s;
+  }
+  .bg-glow.intense {
+    background: radial-gradient(circle, rgba(230,59,59,0.18) 0%, transparent 70%);
+  }
+
+  .counter-inner {
+    position: relative;
+    text-align: center;
+    padding: 0 24px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .counter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.4s;
+    text-align: center;
+    width: 100%;
+  }
+  .counter-label .live-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  /* NUMBER DISPLAY */
+  .counter-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(32px, 7vw, 72px);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    margin-bottom: 36px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-height: 1.2em;
+    opacity: 0;
+    animation: fadeUp 0.4s ease forwards 0.7s;
+    position: relative;
+    width: 100%;
+    text-align: center;
+  }
+
+  .rupee-sym {
+    color: var(--muted);
+    font-size: 0.6em;
+    margin-right: 4px;
+    align-self: flex-start;
+    padding-top: 0.12em;
+    transition: color 0.3s;
+  }
+  .rupee-sym.red { color: var(--red); }
+
+  /* Individual digit containers */
+  .digit-slot {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    height: 1.2em;
+    vertical-align: middle;
+    transition: color 0.3s;
+  }
+  .digit-slot.comma {
+    color: var(--muted);
+    overflow: visible;
+    transition: color 0.3s;
+  }
+  .digit-slot.locked { color: var(--red); text-shadow: 0 0 20px var(--red-glow); }
+  .digit-slot.comma.locked { color: rgba(230,59,59,0.5); }
+
+  /* spinning digit tape */
+  .digit-tape {
+    display: flex;
+    flex-direction: column;
+    animation: none;
+  }
+  .digit-tape.spinning {
+    animation: spinDigit 0.07s linear infinite;
+  }
+  @keyframes spinDigit {
+    from { transform: translateY(0); }
+    to { transform: translateY(-100%); }
+  }
+
+  /* CAPTION AREA */
+  .caption-block {
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    margin: 0 auto;
+  }
+  .caption-block.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .caption-line1 {
+    font-size: clamp(13px, 2vw, 15px);
+    color: #6b6b7a;
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    border-top: 1px solid #1a1a20;
+    padding-top: 24px;
+    text-align: center;
+  }
+  .caption-line1 strong { color: #9a9aaa; font-weight: 500; }
+
+  .cta-line {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(32px, 5.5vw, 54px);
+    letter-spacing: 0.08em;
+    color: var(--text);
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    text-align: center;
+    display: block;
+  }
+  .cta-line.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cta-line span {
+    color: var(--red);
+    position: relative;
+  }
+  .cta-line span::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0; right: 0;
+    height: 2px;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s ease 0.4s;
+  }
+  .cta-line.show span::after { transform: scaleX(1); }
+
+  /* SHAKE on stuck */
+  @keyframes stuckShake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-4px); }
+    20% { transform: translateX(4px); }
+    30% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    50% { transform: translateX(-2px); }
+    60% { transform: translateX(2px); }
+    70% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+  .counter-number.shake {
+    animation: stuckShake 0.5s ease forwards;
+  }
+
+  /* Screen flash on stuck */
+  .flash-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--red);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity 0.05s;
+  }
+  .flash-overlay.flash { opacity: 0.08; }
+
+  /* Scanlines texture */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.12) 2px,
+      rgba(0,0,0,0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="scanlines"></div>
+<div class="flash-overlay" id="flash"></div>
+
+<!-- ── CALCULATOR SCREEN ── -->
+<div id="calc-screen">
+  <div class="calc-wrapper">
+    <div class="calc-eyebrow">Bribe AI · Fast Track Estimator</div>
+    <h1 class="calc-title">Estimate Your<br><span>'Fast Track'</span> Cost</h1>
+    <p class="calc-sub">Fill in your details to see what the real cost looks like.</p>
+
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Work Type</label>
+          <select>
+            <option>Passport</option>
+            <option>Driving License</option>
+            <option>Property Registration</option>
+            <option>Police Clearance</option>
+            <option>Ration Card</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Urgency Level</label>
+          <select>
+            <option>Normal</option>
+            <option>Urgent</option>
+            <option>Extremely Urgent</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>City Tier</label>
+          <select>
+            <option>Metro</option>
+            <option>Tier 2</option>
+            <option>Tier 3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Waiting Time (days) — <span id="range-display" style="color:var(--red);">15 days</span></label>
+          <div class="range-wrap">
+            <input type="range" min="1" max="30" value="15" id="wait-range">
+          </div>
+        </div>
+      </div>
+      <button class="cta-btn" id="calc-btn">CALCULATE MY COST →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── COUNTER SCREEN ── -->
+<div id="counter-screen">
+  <div class="bg-glow" id="bg-glow"></div>
+  <div class="counter-inner">
+
+    <div class="counter-label">
+      <span class="live-dot"></span>
+      Live National Corruption Cost Estimate &nbsp;—&nbsp; 2025
+    </div>
+
+    <div class="counter-number" id="counter-number">
+      <span class="rupee-sym" id="rupee">₹</span>
+      <span id="digits-container"></span>
+    </div>
+
+    <div class="caption-block" id="caption-block">
+      <p class="caption-line1">
+        In 2025, corruption drained an estimated <strong>₹12 lakh crore</strong> from the nation's resources.
+      </p>
+      <div class="cta-line" id="cta-line">
+        NOW IT'S TIME TO <span>CHANGE</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── CURSOR ──
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+  });
+
+  // ── RANGE ──
+  const rangeInput = document.getElementById('wait-range');
+  const rangeDisplay = document.getElementById('range-display');
+  rangeInput.addEventListener('input', () => {
+    rangeDisplay.textContent = rangeInput.value + ' days';
+  });
+
+  // ── BUTTON CLICK ──
+  document.getElementById('calc-btn').addEventListener('click', () => {
+    const calcScreen = document.getElementById('calc-screen');
+    const counterScreen = document.getElementById('counter-screen');
+
+    calcScreen.classList.add('exit');
+    setTimeout(() => {
+      calcScreen.style.display = 'none';
+      counterScreen.classList.add('visible');
+      setTimeout(startCounter, 600);
+    }, 700);
+  });
+
+  // ── COUNTER LOGIC ──
+  const TARGET = '12000000000000'; // 12 lakh crore in digits
+  const FORMATTED_TARGET = '1,20,000,00,00,000'; // Indian numbering system
+  // Display chars: 1 , 2 0 , 0 0 0 , 0 0 , 0 0 , 0 0 0
+
+  // We'll animate digit by digit left to right locking in
+  // Total display: ₹1,20,000,00,00,000
+  const DISPLAY_CHARS = ['1', ',', '2', '0', ',', '0', '0', '0', ',', '0', '0', ',', '0', '0', ',', '0', '0', '0'];
+  const DIGIT_CHARS = '0123456789';
+
+  let slots = [];
+  let intervals = [];
+
+  function buildDigitSlots() {
+    const container = document.getElementById('digits-container');
+    container.innerHTML = '';
+    slots = [];
+
+    DISPLAY_CHARS.forEach((ch, i) => {
+      const slot = document.createElement('span');
+      slot.className = 'digit-slot' + (ch === ',' ? ' comma' : '');
+      slot.dataset.target = ch;
+      slot.dataset.index = i;
+
+      if (ch === ',') {
+        slot.textContent = ',';
+      } else {
+        const tape = document.createElement('span');
+        tape.className = 'digit-tape';
+        tape.textContent = Math.floor(Math.random() * 10);
+        slot.appendChild(tape);
+      }
+
+      container.appendChild(slot);
+      slots.push(slot);
+    });
+  }
+
+  function startCounter() {
+    buildDigitSlots();
+    const counterNum = document.getElementById('counter-number');
+    const bgGlow = document.getElementById('bg-glow');
+
+    // Start all non-comma slots spinning
+    slots.forEach((slot, i) => {
+      if (slot.dataset.target !== ',') {
+        const tape = slot.querySelector('.digit-tape');
+        if (!tape) return;
+
+        // Randomize initial digit
+        const spin = () => {
+          tape.textContent = DIGIT_CHARS[Math.floor(Math.random() * 10)];
+        };
+
+        const iv = setInterval(spin, 60);
+        intervals.push({ iv, index: i });
+      }
+    });
+
+    // Lock digits one by one, left to right
+    // Total anim: ~2.8s
+    // First digit locks at 0.6s, last at 2.6s
+    const nonCommaSlots = slots.filter(s => s.dataset.target !== ',');
+    const totalDigits = nonCommaSlots.length; // 13 digits
+    const startLock = 700;
+    const lockSpread = 2000;
+
+    nonCommaSlots.forEach((slot, idx) => {
+      const delay = startLock + (lockSpread * idx) / (totalDigits - 1);
+
+      setTimeout(() => {
+        // Stop spinning, lock to target
+        const tape = slot.querySelector('.digit-tape');
+        if (!tape) return;
+
+        // Find and clear its interval
+        const entry = intervals.find(e => e.index == slot.dataset.index);
+        if (entry) clearInterval(entry.iv);
+
+        tape.classList.remove('spinning');
+        tape.textContent = slot.dataset.target;
+        slot.classList.add('locked');
+
+        // Also lock corresponding commas
+        const slotIdx = parseInt(slot.dataset.index);
+        // check neighbors
+        slots.forEach(s => {
+          if (s.dataset.target === ',' && parseInt(s.dataset.index) <= slotIdx) {
+            s.classList.add('locked');
+          }
+        });
+
+        // Color rupee sign red once first digit locks
+        if (idx === 0) {
+          document.getElementById('rupee').classList.add('red');
+        }
+
+        // Last digit locked → shake + flash + show caption
+        if (idx === totalDigits - 1) {
+          setTimeout(() => {
+            bgGlow.classList.add('intense');
+            // Flash
+            flashScreen();
+            // Shake counter
+            counterNum.classList.add('shake');
+            setTimeout(() => counterNum.classList.remove('shake'), 500);
+
+            // Show caption
+            setTimeout(() => {
+              document.getElementById('caption-block').classList.add('show');
+              setTimeout(() => {
+                document.getElementById('cta-line').classList.add('show');
+              }, 500);
+            }, 400);
+          }, 80);
+        }
+      }, delay);
+    });
+  }
+
+  function flashScreen() {
+    const flash = document.getElementById('flash');
+    flash.classList.add('flash');
+    setTimeout(() => {
+      flash.classList.remove('flash');
+      setTimeout(() => {
+        flash.classList.add('flash');
+        setTimeout(() => flash.classList.remove('flash'), 80);
+      }, 120);
+    }, 80);
+  }
+</script>
+</body>
+</html>
